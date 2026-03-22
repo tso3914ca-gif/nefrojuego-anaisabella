@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Bio-Scanner: El Filtro Maestro</title>
+    <style>
+        body {
+            background: radial-gradient(circle, #001a33 0%, #00050a 100%);
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .interfaz {
+            max-width: 900px;
+            margin: auto;
+            border: 4px solid #00e5ff;
+            border-radius: 30px;
+            padding: 35px;
+            background: rgba(0, 10, 20, 0.95);
+            box-shadow: 0 0 50px #00b0ff;
+        }
+
+        h1 { color: #ffd700; letter-spacing: 4px; font-size: 2.3rem; margin-bottom: 10px; }
+
+        .progreso-texto {
+            font-size: 1.4rem;
+            color: #00e5ff;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .contenedor-barra {
+            width: 100%;
+            background: #002855;
+            height: 20px;
+            border-radius: 10px;
+            border: 1px solid #00e5ff;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .llenado-barra {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00ff88, #00e5ff);
+            transition: width 0.4s ease;
+        }
+
+        .pregunta-zona {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 25px;
+            border-left: 5px solid #ffd700;
+            font-size: 1.6rem;
+            margin-bottom: 25px;
+            min-height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .opciones-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .boton-medico {
+            background: rgba(0, 229, 255, 0.05);
+            color: #00e5ff;
+            border: 2px solid #00e5ff;
+            padding: 18px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: 0.3s;
+            text-align: left;
+        }
+
+        .boton-medico:hover:not(:disabled) {
+            background: #00e5ff;
+            color: #000;
+            box-shadow: 0 0 20px #00e5ff;
+        }
+
+        #cuadro-explicacion {
+            margin-top: 25px;
+            padding: 20px;
+            border-radius: 15px;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .victoria { border: 3px solid #00ff88; background: rgba(0, 255, 136, 0.1); color: #00ff88; }
+        .fallo { border: 3px solid #ff3d00; background: rgba(255, 61, 0, 0.1); color: #ff3d00; }
+
+        .btn-accion {
+            padding: 12px 40px;
+            font-weight: bold;
+            font-size: 1.2rem;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-top: 15px;
+            border: none;
+        }
+
+        #btn-siguiente { background: #ffd700; color: #000; }
+        #btn-reintentar { background: #ff3d00; color: #fff; }
+
+        .diploma-final {
+            background: #fff;
+            color: #002855;
+            padding: 40px;
+            border: 15px double #ffd700;
+            border-radius: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="interfaz">
+    <h1>BIO-SCANNER: EL FILTRO MAESTRO</h1>
+    
+    <div class="progreso-texto" id="txt-progreso">Misión 1 de 12</div>
+    <div class="contenedor-barra">
+        <div class="llenado-barra" id="barra-llenado"></div>
+    </div>
+
+    <div class="pregunta-zona" id="pregunta-texto">Iniciando sistema...</div>
+
+    <div class="opciones-grid" id="contenedor-botones"></div>
+
+    <div id="cuadro-explicacion">
+        <h2 id="feedback-titulo"></h2>
+        <p id="feedback-parrafo" style="font-size: 1.2rem;"></p>
+        <button id="btn-siguiente" class="btn-accion" onclick="avanzar()" style="display:none;">CONTINUAR ➡️</button>
+        <button id="btn-reintentar" class="btn-accion" onclick="reintentar()" style="display:none;">REINTENTAR 🔄</button>
+    </div>
+</div>
+
+<script>
+    const misiones = [
+        { p: "¿Cuál es la función principal del sistema excretor?", o: ["Bombear sangre", "Filtrar toxinas de la sangre", "Digerir alimentos", "Producir oxígeno"], r: 1, e: "¡Análisis correcto! Limpiar la sangre es vital para la salud." },
+        { p: "¿Qué par de órganos son los filtros principales?", o: ["Pulmones", "Intestinos", "Riñones", "Ventrículos"], r: 2, e: "¡Exacto! Los riñones actúan como coladores de alta tecnología." },
+        { p: "¿Cómo se llaman los tubos que bajan la orina?", o: ["Uréteres", "Venas", "Arterias", "Capilares"], r: 0, e: "¡Bien! Los uréteres conectan el riñón con la vejiga." },
+        { p: "¿Dónde se almacena la orina antes de salir?", o: ["En el Bazo", "En la Vejiga", "En el Hígado", "En el Páncreas"], r: 1, e: "¡Perfecto! La vejiga es el tanque de almacenamiento." },
+        { p: "¿Cómo se llama el conducto de salida final?", o: ["Esófago", "Uretra", "Bronquio", "Uréter"], r: 1, e: "¡Muy bien! La uretra lleva el líquido al exterior." },
+        { p: "¿Cómo se llama la unidad que filtra dentro del riñón?", o: ["Neurona", "Alvéolo", "Nefrona", "Glóbulo"], r: 2, e: "¡Eres experta! Cada riñón tiene un millón de nefronas." },
+        { p: "¿Qué sustancia de desecho eliminamos por la orina?", o: ["Glucosa", "Urea", "Hierro", "Calcio"], r: 1, e: "¡Correcto! La urea es el residuo del procesamiento de proteínas." },
+        { p: "¿Qué órgano ayuda a excretar toxinas por el sudor?", o: ["Los Pulmones", "El Corazón", "La Piel", "El Cerebro"], r: 2, e: "¡Exacto! Las glándulas sudoríparas también limpian el cuerpo." },
+        { p: "¿Qué significa si la orina es muy oscura?", o: ["Mucha energía", "Buena salud", "Deshidratación (falta agua)", "Mucho sueño"], r: 2, e: "¡Análisis clínico correcto! Necesitas beber más agua." },
+        { p: "¿Por qué arteria entra la sangre al riñón?", o: ["Arteria Renal", "Arteria Aorta", "Arteria Pulmonar", "Arteria Carótida"], r: 0, e: "¡Bien! La arteria renal trae la sangre para ser purificada." },
+        { p: "¿Cuál es el color saludable de la orina?", o: ["Rojo", "Azul", "Amarillo claro", "Verde"], r: 2, e: "¡Correcto! El amarillo claro indica un buen filtrado." },
+        { p: "¿Qué forma tienen los riñones?", o: ["De pera", "De frijol o caraota", "De círculo", "De estrella"], r: 1, e: "¡Misión cumplida! Tienen forma de frijol y están en la espalda baja." }
+    ];
+
+    let n = 0;
+
+    function iniciar() {
+        document.getElementById("cuadro-explicacion").style.display = "none";
+        document.getElementById("btn-siguiente").style.display = "none";
+        document.getElementById("btn-reintentar").style.display = "none";
+
+        // Actualizar barra y texto 1 de 12
+        document.getElementById("txt-progreso").innerText = "Misión " + (n + 1) + " de " + misiones.length;
+        document.getElementById("barra-llenado").style.width = ((n / misiones.length) * 100) + "%";
+
+        if (n >= misiones.length) {
+            finalizar();
+            return;
+        }
+
+        const m = misiones[n];
+        document.getElementById("pregunta-texto").innerText = m.p;
+        const areaBotones = document.getElementById("contenedor-botones");
+        areaBotones.innerHTML = "";
+
+        m.o.forEach((opcion, i) => {
+            const boton = document.createElement("button");
+            boton.className = "boton-medico";
+            boton.innerText = (i + 1) + ". " + opcion;
+            boton.onclick = () => validar(i);
+            areaBotones.appendChild(boton);
+        });
+    }
+
+    function validar(i) {
+        const m = misiones[n];
+        const cuadro = document.getElementById("cuadro-explicacion");
+        const titulo = document.getElementById("feedback-titulo");
+        const texto = document.getElementById("feedback-parrafo");
+        const botones = document.querySelectorAll(".boton-medico");
+
+        botones.forEach(b => b.disabled = true);
+        cuadro.style.display = "block";
+
+        if (i === m.r) {
+            cuadro.className = "victoria";
+            titulo.innerText = "✅ ANÁLISIS CORRECTO";
+            texto.innerText = m.e;
+            document.getElementById("btn-siguiente").style.display = "inline-block";
+        } else {
+            cuadro.className = "fallo";
+            titulo.innerText = "⚠️ ERROR DETECTADO";
+            texto.innerText = "Esa no es la respuesta. Revisa el manual y vuelve a intentarlo.";
+            document.getElementById("btn-reintentar").style.display = "inline-block";
+        }
+    }
+
+    function reintentar() {
+        document.getElementById("cuadro-explicacion").style.display = "none";
+        document.querySelectorAll(".boton-medico").forEach(b => b.disabled = false);
+    }
+
+    function avanzar() {
+        n++;
+        iniciar();
+    }
+
+    function finalizar() {
+        document.querySelector(".interfaz").innerHTML = `
+            <div class="diploma-final">
+                <h1 style="color: #b8860b;">📜 TÍTULO DE EXCELENCIA 📜</h1>
+                <h2 style="color: #002855;">ANA ISABELLA TORREALBA</h2>
+                <h3 style="color: #d32f2f;">DIRECTORA DE NEFROLOGÍA</h3>
+                <p style="font-size: 1.3rem;">Has completado el Bio-Scanner con éxito total.</p>
+                <button class="btn-accion" style="background:#002855; color:#fff;" onclick="location.reload()">REINICIAR ESCÁNER</button>
+            </div>
+        `;
+    }
+
+    iniciar();
+</script>
+</body>
+</html>
